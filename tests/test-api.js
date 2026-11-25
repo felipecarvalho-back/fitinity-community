@@ -160,6 +160,19 @@ async function runTests() {
     });
     assert(invalidUploadRes.status === 400, 'Upload de tipo de arquivo não permitido (.txt) rejeitado com 400 Bad Request');
 
+    // 7b. Teste de Upload: arquivo acima do limite de 2MB para avatar
+    const oversizedBuffer = Buffer.alloc(2 * 1024 * 1024 + 1024, 0);
+    const oversizedBlob = new Blob([oversizedBuffer], { type: 'image/png' });
+    const formDataOversized = new FormData();
+    formDataOversized.append('avatar', oversizedBlob, 'grande.png');
+
+    const oversizedUploadRes = await fetch(`${BASE_URL}/api/users/me/avatar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenCarlos}` },
+      body: formDataOversized
+    });
+    assert(oversizedUploadRes.status === 400, 'Upload de arquivo acima do limite (2MB) rejeitado com 400 Bad Request');
+
     // 8. Teste de Upload: imagem válida (PNG dummy 1x1 pixel)
     const validPngBuffer = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
@@ -243,6 +256,11 @@ async function runTests() {
     const commentData = await commentRes.json();
     assert(commentRes.status === 201, `Comentário criado com sucesso com 201 Created (ID: ${commentData.comment?.id})`);
     const commentId = commentData.comment?.id;
+
+    // Listar comentários da publicação
+    const listCommentsRes = await fetch(`${BASE_URL}/api/posts/${postId}/comments`);
+    const listCommentsData = await listCommentsRes.json();
+    assert(listCommentsRes.status === 200 && listCommentsData.comments?.length > 0, 'Listagem de comentários da publicação retornou 200 OK');
 
     // Carlos tenta excluir o comentário de Ana (deve dar 403)
     const unauthorizedCommentDel = await fetch(`${BASE_URL}/api/comments/${commentId}`, {

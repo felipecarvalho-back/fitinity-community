@@ -73,6 +73,9 @@ async function updateProfile(req, res, next) {
       }
 
       const [userRows] = await db.query('SELECT password_hash FROM users WHERE id = ?', [userId]);
+      if (userRows.length === 0) {
+        return res.status(404).json({ error: 'Usuário não encontrado.' });
+      }
       const isMatch = await bcrypt.compare(current_password, userRows[0].password_hash);
       if (!isMatch) {
         return res.status(400).json({ error: 'Senha atual incorreta.' });

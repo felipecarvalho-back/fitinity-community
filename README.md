@@ -1,5 +1,17 @@
 # 🏋️ Fitinity Community API
 
+> **Atividade Final — Projeto de API RESTful com Node.js, Autenticação JWT e Upload de Arquivos**
+
+| Campo | Informação |
+|---|---|
+| **Instituição** | FATEC Carapicuíba |
+| **Curso** | Análise e Desenvolvimento de Sistemas (ADS) — 5º Ciclo |
+| **Disciplina** | Programação Web |
+| **Integrantes** | **Felipe Carvalho Coronado Oropeza** — `felipe.oropeza@aluno.cps.sp.gov.br`<br>**Felipe Kiyoshi de Souza Yamashita** — `felipe.yamashita@aluno.cps.sp.gov.br` |
+| **Protótipo de Referência** | [Figma — Fitinity Community](https://www.figma.com/design/eiBoJbfF8VGYfABlsxFnZb/P02---Fitinity--Community-?node-id=0-1) |
+
+---
+
 API RESTful completa desenvolvida em **Node.js** com **Express**, autenticação **JWT**, upload e validação de imagens com **Multer**, e persistência de dados em banco de dados relacional **MySQL / MariaDB**. O projeto dá suporte às funcionalidades da comunidade fitness **Fitinity Community** e conta com documentação interativa via **Swagger/OpenAPI** e um **Frontend de Testes Integrado**.
 
 ---
@@ -43,7 +55,7 @@ API RESTful completa desenvolvida em **Node.js** com **Express**, autenticação
 O projeto segue uma arquitetura modular em camadas, separando responsabilidades e facilitando manutenção e testes:
 
 ```text
-AtividadePW/
+fitinity-community/
 ├── database/
 │   └── schema.sql                  # Script DDL com a modelagem do banco de dados
 ├── public/                         # Frontend de testes e recursos estáticos
@@ -88,6 +100,51 @@ AtividadePW/
 
 A persistência é gerenciada com 4 tabelas inter-relacionadas com restrições de integridade e chaves estrangeiras com ação em cascata:
 
+```mermaid
+erDiagram
+    USERS ||--o{ POSTS : "cria"
+    USERS ||--o{ LIKES : "realiza"
+    USERS ||--o{ COMMENTS : "escreve"
+    POSTS ||--o{ LIKES : "recebe"
+    POSTS ||--o{ COMMENTS : "possui"
+
+    USERS {
+        int id PK
+        varchar name
+        varchar email UK
+        varchar password_hash
+        varchar bio
+        varchar avatar_url
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    POSTS {
+        int id PK
+        int user_id FK
+        text content
+        varchar image_url
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    LIKES {
+        int id PK
+        int user_id FK "UNIQUE(user_id, post_id)"
+        int post_id FK "UNIQUE(user_id, post_id)"
+        timestamp created_at
+    }
+
+    COMMENTS {
+        int id PK
+        int user_id FK
+        int post_id FK
+        text content
+        timestamp created_at
+        timestamp updated_at
+    }
+```
+
 1. **`users`**:
    - `id`: Chave primária auto-incrementada.
    - `name`: Nome do usuário (VARCHAR 120).
@@ -118,7 +175,7 @@ A persistência é gerenciada com 4 tabelas inter-relacionadas com restrições 
    - `content`: Conteúdo do comentário (TEXT).
    - `created_at` / `updated_at`: Timestamps automáticos.
 
-> 💡 **Nota:** Ao iniciar a aplicação com `npm start` ou `npm run dev`, as tabelas são verificadas e criadas automaticamente caso ainda não existam. O script SQL completo também está disponível em [database/schema.sql](file:///home/kiyoshi/AtividadePW/database/schema.sql).
+> 💡 **Nota:** Ao iniciar a aplicação com `npm start` ou `npm run dev`, o banco de dados e as tabelas são verificados e criados automaticamente caso ainda não existam. O script SQL completo também está disponível em [`database/schema.sql`](./database/schema.sql).
 
 ---
 
@@ -131,7 +188,7 @@ A persistência é gerenciada com 4 tabelas inter-relacionadas com restrições 
 ### Instalação:
 1. Clone ou acesse o diretório do projeto:
    ```bash
-   cd AtividadePW
+   cd fitinity-community
    ```
 2. Instale as dependências:
    ```bash
@@ -157,12 +214,12 @@ NODE_ENV=development
 # Configuração do Banco de Dados
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_USER=fitinity
-DB_PASSWORD=fitinity123
+DB_USER=seu_usuario_mysql
+DB_PASSWORD=sua_senha_mysql
 DB_NAME=fitinity_community
 
 # Chave secreta JWT e validade
-JWT_SECRET=fitinity_super_secret_jwt_token_key_2026_pw
+JWT_SECRET=sua_chave_secreta_jwt_aqui
 JWT_EXPIRES_IN=24h
 
 # Uploads
@@ -223,7 +280,7 @@ Para rodar a suíte completa de testes de integração via terminal:
 ```bash
 npm test
 ```
-Este script testa 26 cenários de ponta a ponta e valida todas as regras de negócio e códigos HTTP.
+Este script testa 28 cenários de ponta a ponta e valida todas as regras de negócio, limites de upload e códigos HTTP.
 
 ---
 

@@ -65,19 +65,24 @@ async function listPosts(req, res, next) {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const offset = (page - 1) * limit;
 
+    const isLikedExpr = currentUserId
+      ? '(SELECT COUNT(*) > 0 FROM likes l WHERE l.post_id = p.id AND l.user_id = ?)'
+      : 'FALSE';
+
     const query = `
       SELECT p.id, p.user_id, p.content, p.image_url, p.created_at, p.updated_at,
              u.name as author_name, u.avatar_url as author_avatar,
              (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likes_count,
              (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
-             ${currentUserId ? `(SELECT COUNT(*) > 0 FROM likes l WHERE l.post_id = p.id AND l.user_id = ${currentUserId})` : 'FALSE'} as is_liked_by_me
+             ${isLikedExpr} as is_liked_by_me
       FROM posts p
       INNER JOIN users u ON p.user_id = u.id
       ORDER BY p.created_at DESC
       LIMIT ? OFFSET ?
     `;
 
-    const [posts] = await db.query(query, [limit, offset]);
+    const queryParams = currentUserId ? [currentUserId, limit, offset] : [limit, offset];
+    const [posts] = await db.query(query, queryParams);
 
     const [totalRows] = await db.query('SELECT COUNT(*) as total FROM posts');
     const total = totalRows[0].total;
@@ -108,18 +113,23 @@ async function getPostById(req, res, next) {
     const postId = req.params.id;
     const currentUserId = req.user ? req.user.id : null;
 
+    const isLikedExpr = currentUserId
+      ? '(SELECT COUNT(*) > 0 FROM likes l WHERE l.post_id = p.id AND l.user_id = ?)'
+      : 'FALSE';
+
     const query = `
       SELECT p.id, p.user_id, p.content, p.image_url, p.created_at, p.updated_at,
              u.name as author_name, u.avatar_url as author_avatar,
              (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as likes_count,
              (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
-             ${currentUserId ? `(SELECT COUNT(*) > 0 FROM likes l WHERE l.post_id = p.id AND l.user_id = ${currentUserId})` : 'FALSE'} as is_liked_by_me
+             ${isLikedExpr} as is_liked_by_me
       FROM posts p
       INNER JOIN users u ON p.user_id = u.id
       WHERE p.id = ?
     `;
 
-    const [posts] = await db.query(query, [postId]);
+    const queryParams = currentUserId ? [currentUserId, postId] : [postId];
+    const [posts] = await db.query(query, queryParams);
 
     if (posts.length === 0) {
       return res.status(404).json({ error: 'Publicação não encontrada.' });
@@ -180,6 +190,13 @@ async function updatePost(req, res, next) {
       });
     }
 
+    const updatedContent = content !== undefined ? content.trim() : post.content;
+
+    if (!updatedContent) {
+      if (req.file) await deleteUploadedFile(`/uploads/posts/${req.file.filename}`);
+      return res.status(400).json({ error: 'O texto da publicação não pode ficar vazio.' });
+    }
+
     let newImageUrl = post.image_url;
 
     // Se uma nova imagem foi enviada
@@ -194,12 +211,6 @@ async function updatePost(req, res, next) {
         await deleteUploadedFile(post.image_url);
       }
       newImageUrl = null;
-    }
-
-    const updatedContent = content !== undefined ? content.trim() : post.content;
-
-    if (!updatedContent) {
-      return res.status(400).json({ error: 'O texto da publicação não pode ficar vazio.' });
     }
 
     await db.query(

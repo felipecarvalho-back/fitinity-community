@@ -1,12 +1,14 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+const DB_NAME = process.env.DB_NAME || 'fitinity_community';
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT) || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'fitinity_community',
+  database: DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -15,8 +17,21 @@ const pool = mysql.createPool({
 
 async function initDatabase() {
   try {
+    // Garante que o banco de dados exista antes de abrir conexão no pool
+    const bootstrapConn = await mysql.createConnection({
+      host: process.env.DB_HOST || '127.0.0.1',
+      port: Number(process.env.DB_PORT) || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || ''
+    });
+    const safeDbName = DB_NAME.replace(/[^a-zA-Z0-9_]/g, '');
+    await bootstrapConn.query(
+      `CREATE DATABASE IF NOT EXISTS \`${safeDbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    );
+    await bootstrapConn.end();
+
     const connection = await pool.getConnection();
-    console.log(`[Database] Conectado ao MySQL com sucesso no banco: ${process.env.DB_NAME || 'fitinity_community'}`);
+    console.log(`[Database] Conectado ao MySQL com sucesso no banco: ${DB_NAME}`);
 
     // Criação automática de tabelas caso não existam
     await connection.query(`
