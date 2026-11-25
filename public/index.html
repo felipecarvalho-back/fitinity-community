@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitinity Community - Painel de Testes da API</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="navbar">
+      <div class="brand">
+        <span class="logo-icon">⚡</span>
+        <div>
+          <h1>Fitinity Community</h1>
+          <p class="subtitle">Ambiente de Testes dos Endpoints & Demonstração</p>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a href="/api/docs" target="_blank" class="btn btn-outline">📖 Swagger Docs</a>
+        <a href="/Fitinity_Community_API.postman_collection.json" download class="btn btn-outline">📥 Postman Collection</a>
+        <div id="session-badge" class="session-badge badge-guest">Não autenticado</div>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-container">
+      <!-- Coluna Esquerda: Demonstração Rápida & Autenticação & Perfil -->
+      <section class="left-col">
+        <!-- Card 1: Checklist de Demonstração Obrigatória -->
+        <div class="card demo-card">
+          <div class="card-header">
+            <h2>🎯 Testes Rápidos da Avaliação (PDF)</h2>
+            <span class="pill-accent">Automatizados</span>
+          </div>
+          <p class="card-desc">Execute com 1 clique os cenários obrigatórios solicitados no item 10 da avaliação:</p>
+          <div class="demo-buttons-grid">
+            <button class="btn btn-secondary btn-sm" onclick="runDemoTest('duplicate_email')">
+              1. E-mail duplicado (409)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="runDemoTest('invalid_login')">
+              2. Login inválido (401)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="runDemoTest('unauthorized_route')">
+              3. Rota privada sem token (401)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="runDemoTest('forbidden_edit')">
+              4. Alterar post de outro usuário (403)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="runDemoTest('invalid_upload')">
+              5. Upload arquivo inválido (400)
+            </button>
+            <button class="btn btn-success btn-sm" onclick="runAllDemoTests()">
+              ⚡ Executar Todos os Cenários
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 2: Autenticação -->
+        <div class="card">
+          <div class="card-header">
+            <h2>🔐 Autenticação (JWT & Bcrypt)</h2>
+            <div class="tab-toggle">
+              <button class="tab-btn active" id="tab-login-btn" onclick="switchAuthTab('login')">Login</button>
+              <button class="tab-btn" id="tab-register-btn" onclick="switchAuthTab('register')">Cadastrar</button>
+            </div>
+          </div>
+
+          <!-- Formulário Login -->
+          <form id="form-login" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label>E-mail:</label>
+              <input type="email" id="login-email" required placeholder="carlos@fitinity.com" value="carlos@fitinity.com">
+            </div>
+            <div class="form-group">
+              <label>Senha:</label>
+              <input type="password" id="login-password" required placeholder="••••••••" value="senha123">
+            </div>
+            <div class="form-row">
+              <button type="submit" class="btn btn-primary">Entrar</button>
+              <button type="button" class="btn btn-secondary" onclick="fillQuickUser('carlos')">Usuário A</button>
+              <button type="button" class="btn btn-secondary" onclick="fillQuickUser('ana')">Usuário B</button>
+            </div>
+          </form>
+
+          <!-- Formulário Cadastro -->
+          <form id="form-register" class="hidden" onsubmit="handleRegister(event)">
+            <div class="form-group">
+              <label>Nome Completo:</label>
+              <input type="text" id="reg-name" required placeholder="Carlos Silva">
+            </div>
+            <div class="form-group">
+              <label>E-mail:</label>
+              <input type="email" id="reg-email" required placeholder="carlos@fitinity.com">
+            </div>
+            <div class="form-group">
+              <label>Senha (mínimo 6 caracteres):</label>
+              <input type="password" id="reg-password" required minlength="6" placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary">Criar Conta</button>
+          </form>
+        </div>
+
+        <!-- Card 3: Perfil e Upload de Avatar -->
+        <div class="card">
+          <div class="card-header">
+            <h2>👤 Perfil & Foto (Multer)</h2>
+            <button class="btn btn-sm btn-outline" onclick="loadMyProfile()">Recarregar</button>
+          </div>
+          <div id="profile-container">
+            <div class="profile-header">
+              <div class="avatar-wrapper">
+                <img id="profile-avatar-img" src="https://via.placeholder.com/80?text=Avatar" alt="Avatar">
+              </div>
+              <div class="profile-info">
+                <h3 id="profile-name">Faça login para ver o perfil</h3>
+                <p id="profile-email">---</p>
+                <p id="profile-bio" class="bio-text">---</p>
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <h4>Upload / Substituição de Avatar (Máx 2MB):</h4>
+              <div class="upload-row">
+                <input type="file" id="avatar-input" accept="image/*">
+                <button class="btn btn-sm btn-secondary" onclick="uploadAvatar()">Enviar Foto</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteAvatar()">Remover Foto</button>
+              </div>
+              
+              <h4>Atualizar Dados:</h4>
+              <div class="form-row">
+                <input type="text" id="edit-name" placeholder="Novo nome">
+                <input type="text" id="edit-bio" placeholder="Nova bio">
+                <button class="btn btn-sm btn-primary" onclick="updateProfile()">Salvar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Coluna Direita: Feed de Posts & Console de Resposta HTTP -->
+      <section class="right-col">
+        <!-- Card 4: Criar Publicação -->
+        <div class="card">
+          <div class="card-header">
+            <h2>✍️ Nova Publicação na Comunidade</h2>
+          </div>
+          <form id="form-create-post" onsubmit="handleCreatePost(event)">
+            <div class="form-group">
+              <textarea id="post-content" rows="3" required placeholder="Compartilhe seu treino, meta alcançada ou rotina fitness..."></textarea>
+            </div>
+            <div class="post-submit-bar">
+              <div class="file-pick">
+                <label for="post-image-file" class="file-label">📷 Adicionar Foto (máx 5MB)</label>
+                <input type="file" id="post-image-file" accept="image/*" onchange="previewPostFile(event)">
+                <span id="post-file-name" class="file-hint">Nenhum arquivo</span>
+              </div>
+              <button type="submit" class="btn btn-primary">Publicar</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Card 5: Feed da Comunidade -->
+        <div class="card">
+          <div class="card-header">
+            <h2>🏋️ Feed da Comunidade</h2>
+            <button class="btn btn-sm btn-outline" onclick="loadFeed()">🔄 Atualizar Feed</button>
+          </div>
+          <div id="posts-list" class="posts-list">
+            <p class="loading-hint">Carregando publicações...</p>
+          </div>
+        </div>
+
+        <!-- Card 6: Console de Resposta da API -->
+        <div class="card console-card">
+          <div class="card-header">
+            <h2>📡 Console de Inspeção HTTP da API</h2>
+            <button class="btn btn-sm btn-outline" onclick="clearConsole()">Limpar</button>
+          </div>
+          <div class="console-body">
+            <div id="console-status" class="console-status">
+              <span class="method-tag method-init">PRONTO</span>
+              <span class="url-tag">Aguardando requisição...</span>
+            </div>
+            <pre id="console-json" class="console-code">// As respostas JSON das requisições aparecerão aqui com código de status e payload.</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal para Editar Post -->
+  <div id="edit-post-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Editar Publicação</h3>
+      <textarea id="edit-post-content" rows="4"></textarea>
+      <div class="form-group">
+        <label>Substituir imagem:</label>
+        <input type="file" id="edit-post-image" accept="image/*">
+      </div>
+      <div class="form-group checkbox-row">
+        <label><input type="checkbox" id="edit-post-remove-image"> Remover imagem atual</label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitEditPost()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
